@@ -92,18 +92,27 @@ export default function Home() {
     formData.append('changes', changes)
 
     try {
+      console.log('파일 타입:', file.type, '파일명:', file.name)
+      
       const response = await fetch('/api/process-document', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('문서 처리 중 오류가 발생했습니다.')
+        const errorData = await response.json().catch(() => ({ error: '서버 오류가 발생했습니다.' }))
+        throw new Error(errorData.error || `서버 오류 (${response.status})`)
       }
 
       const data = await response.json()
+      
+      if (!data.summary || !data.diffList) {
+        throw new Error('분석 결과가 올바르지 않습니다.')
+      }
+      
       setResult(data)
     } catch (err) {
+      console.error('클라이언트 오류:', err)
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
     } finally {
       setLoading(false)
